@@ -1,0 +1,51 @@
+pipeline {
+    agent any
+
+    environment {
+        // Environment variables, if any
+        DOCKER_IMAGE = 'my-app:latest'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Clone the Git repository
+                git credentialsId: 'your-git-credentials-id', url: 'git@github.com:santyy88/project-webapp.git', branch: 'main'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                // Build the Docker image (adjust according to your build process)
+                sh 'docker build -t $DOCKER_IMAGE .'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                // Run tests (adjust according to your testing framework)
+                sh './run-tests.sh'
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                // Configure kubectl to use Minikube's Docker daemon
+                script {
+                    sh 'eval $(minikube -p minikube docker-env)'
+
+                    // Apply Kubernetes manifests to deploy the application
+                    sh 'kubectl apply -f k8s/deployment.yaml'
+                    sh 'kubectl apply -f k8s/service.yaml'
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            // Actions to run after the pipeline (e.g., cleanup, notifications)
+            echo 'Pipeline finished.'
+        }
+    }
+}
